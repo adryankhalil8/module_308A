@@ -24,16 +24,22 @@ const book = {
     this.isRead = true;
     console.log(`${this.title} has been marked as read.`);
   },
+  summary() {
+    return `${this.title} by ${this.author}, ${this.pages} pages`;
+  },
 };
 
 // TODO 1: Log the book's title and author.
-
+console.log(book.title);
+console.log(book.author);
 
 // TODO 2: Call markAsRead() and verify isRead is now true.
-
+book.markAsRead();
+console.log(book.isRead);
 
 // TODO 3: Add a summary() method that returns
 //         "The Great Gatsby by F. Scott Fitzgerald, 180 pages"
+console.log(book.isRead);
 
 
 
@@ -52,16 +58,20 @@ const dog = {
 };
 
 // TODO 1: Call dog.showTricks().
-
+dog.showTricks(); 
 
 // TODO 2: Create a standalone function greet() that uses this.name.
+function greet() {
+  console.log(`Hi, my name is ${this.name}`); // `this` depends on HOW greet() is called
+}
 
 
 // TODO 3: Assign greet to dog.greet and call it — does it work?
-
+dog.greet = greet;
+dog.greet();
 
 // TODO 4: Call greet() alone — what happens and why?
-//         Write your answer as a comment.
+//         Will be undefined 
 
 
 // ------------------------------------------------------------
@@ -83,10 +93,14 @@ class Pet {
 }
 
 // TODO 1: Create 3 different pets using the Pet class.
-
+const pet1 = new Pet("Buddy", "Dog");
+const pet2 = new Pet("Whiskers", "Cat");
+const pet3 = new Pet("Nemo","Fish");
 
 // TODO 2: Feed one of them and verify isHungry changed.
-
+pet1.feed();
+console.log(pet1.isHungry);
+console.log(pet2.isHungry);
 
 // TODO 3: Add a describe() method to Pet that logs
 //         "Buddy is a Dog" (using the instance's name and species).
