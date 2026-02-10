@@ -21,18 +21,18 @@
 
 function a() {
   // TODO: What is the call stack at [1]?
-  // Stack at [1]: ???
+  // Stack at [1]: [a]
   b();
   // TODO: What is the call stack at [4]?
-  // Stack at [4]: ???
+  // Stack at [4]: [a]
 }
 
 function b() {
   // TODO: What is the call stack at [2]?
-  // Stack at [2]: ???
+  // Stack at [2]: [a][b]
   c();
   // TODO: What is the call stack at [3]?
-  // Stack at [3]: ???
+  // Stack at [3]: [a][b]
 }
 
 function c() {
@@ -41,7 +41,7 @@ function c() {
 
 a();
 // TODO: What is the call stack at [5]?
-// Stack at [5]: ???
+// Stack at [5]: []
 
 
 // ------------------------------------------------------------
@@ -63,8 +63,7 @@ first();
 third();
 
 // Predicted output:
-// ???
-
+second > first > third
 
 // ------------------------------------------------------------
 // Exercise 3: Introduction to setTimeout
@@ -84,10 +83,10 @@ setTimeout(() => {
 console.log("End");
 
 // TODO: Predicted output order:
-// ???
+//Title > Start > End > Timout
 
 // TODO: What happens if you change 2000 to 0? Write your answer:
-// ???
+//Timeout fires immediately 
 
 
 // ------------------------------------------------------------
@@ -103,7 +102,8 @@ console.log("3");
 
 // TODO: Write a 2-sentence explanation of why "2" prints last
 //       even though the delay is 0 milliseconds.
-// ???
+// There is a timeout function causing the the program to run through the other pieces of the code 
+// before running the timeout portion
 
 
 // ------------------------------------------------------------
@@ -119,7 +119,7 @@ setTimeout(() => console.log("C"), 200);
 console.log("D");
 
 // TODO: Predicted output order:
-// ???
+// D > B > C > A
 
 
 // ------------------------------------------------------------

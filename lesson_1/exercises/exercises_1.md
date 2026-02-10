@@ -12,15 +12,15 @@ For the following code, **draw or write out the call stack** at each numbered co
 
 ```javascript
 function a() {
-  // Stack at [1]?
+  // Stack at [1]? [a]
   b();
-  // Stack at [4]?
+  // Stack at [4]? [a]
 }
 
 function b() {
-  // Stack at [2]?
+  // Stack at [2]? [a][b]
   c();
-  // Stack at [3]?
+  // Stack at [3]? [a][b]
 }
 
 function c() {
@@ -28,7 +28,7 @@ function c() {
 }
 
 a();
-// Stack at [5]?
+// Stack at [5]? [empty no function]
 ```
 
 ✅ **Check:** Your call stack at `[2]` should show `c → b → a`.
@@ -65,7 +65,7 @@ third();
 
 **Goal:** See asynchronous behavior for the first time.
 
-**Predict** the output, then **run** to verify:
+**Predict** start > end > Timeout Call Back **run** to verify:
 
 ```javascript
 console.log("Start");
