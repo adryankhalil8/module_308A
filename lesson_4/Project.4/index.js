@@ -79,6 +79,8 @@ function updateProgress(evt) {
    Render breed information
 -------------------------- */
 function renderBreedInfo(breed) {
+  console.log("Rendering breed info:", breed); // Debug log
+  
   if (!breed) {
     infoDump.innerHTML = "<p>No breed information available.</p>";
     return;
@@ -181,15 +183,16 @@ function buildCarousel(images) {
     });
   });
 
-  // Reinitialize Bootstrap carousel
+  // Reinitialize Bootstrap carousel (manual control only)
   const carouselElement = document.getElementById("carouselExampleControls");
   const existingCarousel = bootstrap.Carousel.getInstance(carouselElement);
   if (existingCarousel) {
     existingCarousel.dispose();
   }
   new bootstrap.Carousel(carouselElement, {
-    interval: false,
-    wrap: true
+    interval: false,  // Disable auto-sliding
+    ride: false,      // Don't start cycling automatically
+    wrap: true        // Allow wrapping from last to first
   });
 }
 
@@ -257,6 +260,7 @@ async function handleBreedChange() {
     });
 
     const images = res.data;
+    console.log("Images response:", images); // Debug log
 
     if (!Array.isArray(images) || images.length === 0) {
       carouselInner.innerHTML = "";
@@ -271,8 +275,23 @@ async function handleBreedChange() {
     // Build carousel with images
     buildCarousel(images);
 
-    // Display breed information
-    const breed = images[0]?.breeds?.[0];
+    // Display breed information - check multiple sources
+    let breed = images[0]?.breeds?.[0];
+    
+    console.log("Breed from image:", breed); // Debug log
+    
+    // If no breed info in images, fetch it separately
+    if (!breed) {
+      console.log("No breed info in images, fetching breed details...");
+      try {
+        const breedRes = await axios.get(`/breeds/${breedId}`);
+        breed = breedRes.data;
+        console.log("Breed from separate fetch:", breed);
+      } catch (err) {
+        console.warn("Could not fetch breed details:", err);
+      }
+    }
+    
     renderBreedInfo(breed);
 
     console.log(`✅ Loaded ${images.length} images for breed: ${breedId}`);
