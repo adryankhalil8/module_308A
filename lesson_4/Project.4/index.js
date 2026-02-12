@@ -1,192 +1,393 @@
-import * as Carousel from "./carousel.js";
-import axios from "axios";
+console.log("Cat app starting...");
 
-// The breed selection input element.
 const breedSelect = document.getElementById("breedSelect");
-// The information section div element.
 const infoDump = document.getElementById("infoDump");
-// The progress bar div element.
 const progressBar = document.getElementById("progressBar");
-// The get favourites button element.
 const getFavouritesBtn = document.getElementById("getFavouritesBtn");
+const carouselInner = document.getElementById("carouselInner");
 
-// Step 0: Store your API key here for reference and easy access.
-const API_KEY = "live_1svFm9FrzizxA6bLwxwKGNGgFZ1kXJhngHNU1kIS2ojtZqm61XhnJzF9wqU0HxXu";
+// Put your API key here (required for favourites)
+// Get one free at: https://thecatapi.com/signup
+const API_KEY = ""; // Add your API key here for favorites to work
 
-/**
 /* -------------------------
-   Step 1: initialLoad()
+   Axios defaults
 -------------------------- */
-async function initialLoad() {
-  // Get list of breeds
-  const res = await axios.get("/breeds", {
-    onDownloadProgress: updateProgress,
-  });
-
-  const breeds = res.data;
-
-  // Populate select
-  breedSelect.innerHTML = "";
-  breeds.forEach((breed) => {
-    const opt = document.createElement("option");
-    opt.value = breed.id;
-    opt.textContent = breed.name;
-    breedSelect.appendChild(opt);
-  });
-
-  // Build initial carousel using first breed
-  if (breeds.length > 0) {
-    breedSelect.value = breeds[0].id;
-    await handleBreedChange(); // Step 2: create initial carousel
-  }
-}
-
-/**
- * 2. Create an event handler for breedSelect that does the following:
- * - Retrieve information on the selected breed from the cat API using fetch().
- *  - Make sure your request is receiving multiple array items!
- *  - Check the API documentation if you're only getting a single object.
- * - For each object in the response array, create a new element for the carousel.
- *  - Append each of these new elements to the carousel.
- * - Use the other data you have been given to create an informational section within the infoDump element.
- *  - Be creative with how you create DOM elements and HTML.
- *  - Feel free to edit index.html and styles.css to suit your needs, but be careful!
- *  - Remember that functionality comes first, but user experience and design are important.
- * - Each new selection should clear, re-populate, and restart the Carousel.
- * - Add a call to this function to the end of your initialLoad function above to create the initial carousel.
- */
-async function handleBreedChange() {
-  const breedId = breedSelect.value;
-
-  // IMPORTANT: to get an ARRAY of images, use /images/search with limit > 1
-  const res = await axios.get("/images/search", {
-    params: {
-      breed_ids: breedId,
-      limit: 10, // multiple items
-      size: "med",
-      order: "RANDOM",
-    },
-    onDownloadProgress: updateProgress,
-  });
-
-  const images = res.data; // should be array
-   // Some breeds (ex Malayan) sometimes return empty results.
-  // You must handle empty arrays.
-  if (!Array.isArray(images) || images.length === 0) {
-    if (Carousel.clear) Carousel.clear();
-    infoDump.innerHTML = `<p>No images found for this breed right now. Try another breed.</p>`;
-    return;
-  }
-  buildCarouselFromImages(images);
-
-  // Breed data is embedded in images[0].breeds[0] usually
-  const breed = images[0]?.breeds?.[0];
-  renderBreedInfo(breed, images[0]?.url);
-}
-
-breedSelect.addEventListener("change", handleBreedChange);
-
-
-/**
- * 3. Fork your own sandbox, creating a new one named "JavaScript Axios Lab."
- */
-/**
- * 4. Change all of your fetch() functions to axios!
- * - axios has already been imported for you within index.js.
- * - If you've done everything correctly up to this point, this should be simple.
- * - If it is not simple, take a moment to re-evaluate your original code.
- * - Hint: Axios has the ability to set default headers. Use this to your advantage
- *   by setting a default header with your API key so that you do not have to
- *   send it manually with all of your requests! You can also set a default base URL!
- */
 axios.defaults.baseURL = "https://api.thecatapi.com/v1";
-axios.default.header.common["x-api-key"] = API_KEY;
+if (API_KEY) {
+  axios.defaults.headers.common["x-api-key"] = API_KEY;
+}
 
-/**
- * 5. Add axios interceptors to log the time between request and response to the console.
- * - Hint: you already have access to code that does this!
- * - Add a console.log statement to indicate when requests begin.
- * - As an added challenge, try to do this on your own without referencing the lesson material.
- */
+/* -------------------------
+   Axios Interceptors
+-------------------------- */
 axios.interceptors.request.use((config) => {
-    config.metadata = { startTime: performance.now() };
-    console.log(`[Axios] Request started: ${config.method?.toUpperCase()} ${config.url}`);
-    progressBar.style.width = "0%";
-    document.body.style.cursor = "progress";
+  // Store start time for performance tracking
+  config.metadata = { startTime: performance.now() };
 
-    return config;
+  console.log(
+    `[Axios] Request started: ${config.method?.toUpperCase()} ${config.url}`
+  );
+
+  // Start progress bar
+  progressBar.style.width = "0%";
+  document.body.style.cursor = "progress";
+
+  return config;
 });
 
 axios.interceptors.response.use(
-    (response) => {
-        const end = performance.now();
-        const ms = end - (response.config.metadata?.startTime ?? end);
+  (response) => {
+    const end = performance.now();
+    const ms = end - (response.config.metadata?.startTime ?? end);
 
-        console.log(`[Axios] Response received in ${ms.toFixed(1)}ms: ${response.config.url}`);
+    console.log(
+      `[Axios] Response received in ${ms.toFixed(1)}ms: ${response.config.url}`
+    );
 
-        progressBar.style.widthe = "100%";
-        document.body.style.cursor = "";
+    // Complete progress bar
+    progressBar.style.width = "100%";
+    setTimeout(() => {
+      progressBar.style.width = "0%";
+    }, 500);
+    document.body.style.cursor = "";
 
-        return response;
-    },
-    (error) => {
-        document.body.style.cursor = "";
-        progressBar.style.width = "0%";
-
-        console.error("[Axios] Error:", error?.response?.data || error.message);
-    } 
+    return response;
+  },
+  (error) => {
+    document.body.style.cursor = "";
+    progressBar.style.width = "0%";
+    console.error("[Axios] Error:", error?.response?.data || error.message);
+    return Promise.reject(error);
+  }
 );
 
-/**
- * 6. Next, we'll create a progress bar to indicate the request is in progress.
- * - The progressBar element has already been created for you.
- *  - You need only to modify its "width" style property to align with the request progress.
- * - In your request interceptor, set the width of the progressBar element to 0%.
- *  - This is to reset the progress with each request.
- * - Research the axios onDownloadProgress config option.
- * - Create a function "updateProgress" that receives a ProgressEvent object.
- *  - Pass this function to the axios onDownloadProgress config option in your event handler.
- * - console.log your ProgressEvent object within updateProgess, and familiarize yourself with its structure.
- *  - Update the progress of the request using the properties you are given.
- * - Note that we are not downloading a lot of data, so onDownloadProgress will likely only fire
- *   once or twice per request to this API. This is still a concept worth familiarizing yourself
- *   with for future projects.
- */
+/* -------------------------
+   Progress handler
+-------------------------- */
+function updateProgress(evt) {
+  if (!evt.lengthComputable || !evt.total) {
+    progressBar.style.width = "50%";
+    return;
+  }
 
-/**
- * 7. As a final element of progress indication, add the following to your axios interceptors:
- * - In your request interceptor, set the body element's cursor style to "progress."
- * - In your response interceptor, remove the progress cursor style from the body element.
- */
-/**
- * 8. To practice posting data, we'll create a system to "favourite" certain images.
- * - The skeleton of this function has already been created for you.
- * - This function is used within Carousel.js to add the event listener as items are created.
- *  - This is why we use the export keyword for this function.
- * - Post to the cat API's favourites endpoint with the given ID.
- * - The API documentation gives examples of this functionality using fetch(); use Axios!
- * - Add additional logic to this function such that if the image is already favourited,
- *   you delete that favourite using the API, giving this function "toggle" functionality.
- * - You can call this function by clicking on the heart at the top right of any image.
- */
-export async function favourite(imgId) {
-  // your code here
+  const pct = Math.round((evt.loaded / evt.total) * 100);
+  progressBar.style.width = `${Math.min(pct, 90)}%`;
 }
 
-/**
- * 9. Test your favourite() function by creating a getFavourites() function.
- * - Use Axios to get all of your favourites from the cat API.
- * - Clear the carousel and display your favourites when the button is clicked.
- *  - You will have to bind this event listener to getFavouritesBtn yourself.
- *  - Hint: you already have all of the logic built for building a carousel.
- *    If that isn't in its own function, maybe it should be so you don't have to
- *    repeat yourself in this section.
- */
+/* -------------------------
+   Render breed information
+-------------------------- */
+function renderBreedInfo(breed) {
+  if (!breed) {
+    infoDump.innerHTML = "<p>No breed information available.</p>";
+    return;
+  }
 
-/**
- * 10. Test your site, thoroughly!
- * - What happens when you try to load the Malayan breed?
- *  - If this is working, good job! If not, look for the reason why and fix it!
- * - Test other breeds as well. Not every breed has the same data available, so
- *   your code should account for this.
- */
+  infoDump.innerHTML = "";
+
+  const title = document.createElement("h2");
+  title.textContent = breed.name || "Unknown Breed";
+
+  const desc = document.createElement("p");
+  desc.textContent = breed.description || "No description available.";
+
+  const meta = document.createElement("div");
+  meta.innerHTML = `
+    <p><strong>Origin:</strong> ${breed.origin || "N/A"}</p>
+    <p><strong>Temperament:</strong> ${breed.temperament || "N/A"}</p>
+    <p><strong>Life span:</strong> ${breed.life_span || "N/A"} years</p>
+    ${
+      breed.wikipedia_url
+        ? `<p><strong>Wikipedia:</strong> <a href="${breed.wikipedia_url}" target="_blank" rel="noreferrer">Learn more</a></p>`
+        : ""
+    }
+  `;
+
+  infoDump.appendChild(title);
+  infoDump.appendChild(desc);
+  infoDump.appendChild(meta);
+}
+
+/* -------------------------
+   Build Bootstrap Carousel
+-------------------------- */
+function buildCarousel(images) {
+  carouselInner.innerHTML = "";
+
+  if (!Array.isArray(images) || images.length === 0) {
+    carouselInner.innerHTML = `
+      <div class="carousel-item active">
+        <div class="card">
+          <div class="img-wrapper">
+            <p class="text-muted">No images available</p>
+          </div>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  images.forEach((img, idx) => {
+    const item = document.createElement("div");
+    item.className = `carousel-item ${idx === 0 ? "active" : ""}`;
+
+    item.innerHTML = `
+      <div class="card">
+        <div class="img-wrapper position-relative">
+          <img src="${img.url}" class="d-block w-100" alt="Cat ${idx + 1}" 
+               onerror="this.src='https://via.placeholder.com/800x500?text=Image+Not+Available'" />
+          <button class="btn btn-light position-absolute top-0 end-0 m-2"
+                  data-img-id="${img.id}" 
+                  title="Toggle favourite"
+                  aria-label="Add to favorites">
+            ❤️
+          </button>
+        </div>
+      </div>
+    `;
+
+    carouselInner.appendChild(item);
+  });
+
+  // Bind favorite button click handlers
+  carouselInner.querySelectorAll("button[data-img-id]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const imgId = e.currentTarget.getAttribute("data-img-id");
+      
+      if (!API_KEY) {
+        alert("⚠️ Favorites require an API key!\n\nGet a free API key at:\nhttps://thecatapi.com/signup\n\nThen add it to the API_KEY variable in index.js");
+        return;
+      }
+
+      try {
+        const result = await favourite(imgId);
+        
+        // Toggle button style based on result
+        if (result.status === "created") {
+          e.currentTarget.classList.remove("btn-light");
+          e.currentTarget.classList.add("btn-danger");
+          e.currentTarget.title = "Remove from favorites";
+        } else {
+          e.currentTarget.classList.remove("btn-danger");
+          e.currentTarget.classList.add("btn-light");
+          e.currentTarget.title = "Add to favorites";
+        }
+      } catch (err) {
+        console.error("Favorite error:", err);
+        alert("Failed to update favorite. Check console for details.");
+      }
+    });
+  });
+
+  // Reinitialize Bootstrap carousel
+  const carouselElement = document.getElementById("carouselExampleControls");
+  const existingCarousel = bootstrap.Carousel.getInstance(carouselElement);
+  if (existingCarousel) {
+    existingCarousel.dispose();
+  }
+  new bootstrap.Carousel(carouselElement, {
+    interval: false,
+    wrap: true
+  });
+}
+
+/* -------------------------
+   Initial Load - Get all breeds
+-------------------------- */
+async function initialLoad() {
+  try {
+    const res = await axios.get("/breeds", {
+      onDownloadProgress: updateProgress,
+    });
+
+    const breeds = res.data;
+
+    if (!Array.isArray(breeds) || breeds.length === 0) {
+      throw new Error("No breeds returned from API");
+    }
+
+    // Populate breed selector
+    breedSelect.innerHTML = "";
+    breeds.forEach((breed) => {
+      const opt = document.createElement("option");
+      opt.value = breed.id;
+      opt.textContent = breed.name;
+      breedSelect.appendChild(opt);
+    });
+
+    // Load first breed
+    if (breeds.length > 0) {
+      breedSelect.value = breeds[0].id;
+      await handleBreedChange();
+    }
+
+    console.log(`✅ Loaded ${breeds.length} breeds`);
+  } catch (error) {
+    console.error("Initial load failed:", error);
+    infoDump.innerHTML = `
+      <div class="alert alert-danger" role="alert">
+        <h4>Failed to load breeds</h4>
+        <p>Please check your internet connection and try refreshing the page.</p>
+        <p class="mb-0"><small>Error: ${error.message}</small></p>
+      </div>
+    `;
+    throw error;
+  }
+}
+
+/* -------------------------
+   Handle breed selection change
+-------------------------- */
+async function handleBreedChange() {
+  const breedId = breedSelect.value;
+
+  if (!breedId) return;
+
+  try {
+    const res = await axios.get("/images/search", {
+      params: {
+        breed_ids: breedId,
+        limit: 10,
+        size: "med",
+        order: "RANDOM",
+      },
+      onDownloadProgress: updateProgress,
+    });
+
+    const images = res.data;
+
+    if (!Array.isArray(images) || images.length === 0) {
+      carouselInner.innerHTML = "";
+      infoDump.innerHTML = `
+        <div class="alert alert-warning" role="alert">
+          No images found for this breed. Try selecting another breed.
+        </div>
+      `;
+      return;
+    }
+
+    // Build carousel with images
+    buildCarousel(images);
+
+    // Display breed information
+    const breed = images[0]?.breeds?.[0];
+    renderBreedInfo(breed);
+
+    console.log(`✅ Loaded ${images.length} images for breed: ${breedId}`);
+  } catch (error) {
+    console.error("Breed change error:", error);
+    infoDump.innerHTML = `
+      <div class="alert alert-danger" role="alert">
+        Failed to load images for this breed.
+      </div>
+    `;
+  }
+}
+
+// Listen for breed selection changes
+breedSelect.addEventListener("change", handleBreedChange);
+
+/* -------------------------
+   Toggle Favorite (requires API key)
+-------------------------- */
+async function favourite(imgId) {
+  if (!API_KEY) {
+    throw new Error("API key required for favorites");
+  }
+
+  try {
+    // Get current favorites
+    const favRes = await axios.get("/favourites", {
+      onDownloadProgress: updateProgress,
+    });
+
+    const favs = favRes.data;
+    const existing = favs.find((f) => String(f.image_id) === String(imgId));
+
+    if (existing) {
+      // Remove from favorites
+      await axios.delete(`/favourites/${existing.id}`, {
+        onDownloadProgress: updateProgress,
+      });
+      console.log(`❌ Unfavorited image: ${imgId}`);
+      return { status: "deleted", imgId };
+    } else {
+      // Add to favorites
+      const created = await axios.post(
+        "/favourites",
+        { image_id: imgId },
+        { onDownloadProgress: updateProgress }
+      );
+      console.log(`❤️ Favorited image: ${imgId}`);
+      return { status: "created", imgId, favouriteId: created.data?.id };
+    }
+  } catch (error) {
+    console.error("Favorite error:", error);
+    throw error;
+  }
+}
+
+/* -------------------------
+   Get all favorites (requires API key)
+-------------------------- */
+async function getFavourites() {
+  if (!API_KEY) {
+    alert("⚠️ Favorites require an API key!\n\nGet a free API key at:\nhttps://thecatapi.com/signup\n\nThen add it to the API_KEY variable in index.js");
+    return;
+  }
+
+  try {
+    const res = await axios.get("/favourites", {
+      onDownloadProgress: updateProgress,
+    });
+
+    const favs = res.data;
+
+    if (!Array.isArray(favs) || favs.length === 0) {
+      carouselInner.innerHTML = "";
+      infoDump.innerHTML = `
+        <div class="alert alert-info" role="alert">
+          <h4>No favorites yet</h4>
+          <p>Click the ❤️ button on any cat image to add it to your favorites!</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Extract images from favorites
+    const images = favs
+      .filter((f) => f.image && f.image.url)
+      .map((f) => ({ 
+        id: f.image_id, 
+        url: f.image.url 
+      }));
+
+    buildCarousel(images);
+    
+    infoDump.innerHTML = `
+      <h2>❤️ Your Favorites</h2>
+      <p>You have ${images.length} favorite cat${images.length !== 1 ? 's' : ''}!</p>
+    `;
+
+    console.log(`✅ Loaded ${images.length} favorites`);
+  } catch (error) {
+    console.error("Get favorites error:", error);
+    infoDump.innerHTML = `
+      <div class="alert alert-danger" role="alert">
+        Failed to load favorites. Please check your API key and try again.
+      </div>
+    `;
+  }
+}
+
+// Get favorites button click handler
+getFavouritesBtn.addEventListener("click", getFavourites);
+
+/* -------------------------
+   Initialize app
+-------------------------- */
+initialLoad().catch((error) => {
+  console.error("❌ App initialization failed:", error);
+});
