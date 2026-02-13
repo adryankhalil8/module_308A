@@ -63,146 +63,117 @@ This version is built for class using **JSON Server** as a local REST API.
 
 ---
 
-## Setup & Run (Local)
+---
 
-### 1) Install Dependencies
-You need Node.js installed. Then install JSON Server:
+## Rubric Requirements Checklist (How This Project Meets Them)
+
+### 1) Use fetch API or Axios with an external web API (20%)
+✅ **Met**  
+This app uses the **Fetch API** to communicate with an external public API (Datamuse) and uses that data to populate an enrichment feature in the UI.
+
+- External API: Datamuse (keyword suggestion service)
+- Where:
+  - `js/api/enrichApi.js` → `fetchKeywordSuggestions()`
+  - `js/main.js` → debounced enrichment handler on company name input
+  - `js/ui/render.js` → `renderPills()` displays results in the page
+
+**User-facing result:** As the user types a company name, the app shows suggestion “pills” populated from external API data.
+
+---
+
+### 2) Create user interaction with the API via search/pagination/gallery using GET (15%)
+✅ **Met**  
+This app uses **GET** requests with user-driven interaction in two areas:
+
+**A) Lead list retrieval (GET)**
+- Fetches leads from the local REST API (`json-server`)
+- Supports pagination via `_page` and `_limit`
+- Supports search via `q` (full text search)
+- Where:
+  - `js/api/leadsApi.js` → `fetchLeads()`
+  - `js/main.js` → `loadLeads()` called by pagination + search inputs
+
+**B) External enrichment retrieval (GET)**
+- Fetches keyword suggestions from Datamuse based on the company name input
+- Where:
+  - `js/api/enrichApi.js` → external GET call
+
+**User-facing result:** Search, pagination, and enrichment are all driven by user actions and use GET requests to retrieve associated data.
+
+---
+
+### 3) Enable user manipulation of API data via POST / PUT / PATCH (15%)
+✅ **Met**  
+This app supports **creating and updating data** in the API.
+
+- **POST**: create a new lead record
+- **PATCH**: update an existing lead’s status (New → Qualified → Contacted → Closed)
+
+Where:
+- `js/api/leadsApi.js` → `createLead()` and `patchLead()`
+- `js/main.js` → form submission handler + status action handler
+
+**User-facing result:** Users can add leads and update their pipeline status, and those changes persist in the database.
+
+---
+
+### 4) Use Promises and async/await (15%)
+✅ **Met**  
+Async operations use `async/await` syntax throughout, and Promises are utilized via the Fetch API and debounced event logic.
+
+Where:
+- `js/api/leadsApi.js` → async CRUD operations
+- `js/api/enrichApi.js` → async external API request
+- `js/main.js` → async UI workflows and request handling
+
+---
+
+### 5) Organize code into at least 3 modules using imports/exports (3%)
+✅ **Met**  
+This project uses **multiple ES modules** (more than the minimum requirement) and imports functions/data across files.
+
+Modules:
+- `js/main.js`
+- `js/api/leadsApi.js`
+- `js/api/enrichApi.js`
+- `js/state/store.js`
+- `js/ui/render.js`
+
+---
+
+### 6) Avoid event loop issues (race conditions/out-of-order responses) (5%)
+✅ **Met**  
+This project implements multiple safeguards to prevent common async UI bugs:
+
+- **Debouncing** to reduce request spam
+- **AbortController** to cancel outdated enrichment requests
+- **Request ID checks** to ignore stale/out-of-order responses
+
+Where:
+- `js/state/store.js` → request IDs + abort controller references
+- `js/main.js` → request ID guards and abort logic
+
+---
+
+### 7) Engage user experience using HTML/CSS (5%)
+✅ **Met**  
+The interface is designed as a simple dashboard with:
+- Clear layout (intake form + leads panel)
+- Status badges
+- One-click pipeline actions
+- Feedback messaging for save/update states
+
+Where:
+- `index.html`
+- `styles.css`
+
+---
+
+### 8) Run without errors / comment out blockers (partial credit) (10%)
+✅ **Met (when API is running)**  
+The app runs cleanly with the local JSON Server API running.
+
+If errors occur, they are typically due to the API not running. Start the API with:
 
 ```bash
-npm install -g json-server
-2) Create db.json
-In the project root, create a file called db.json:
-
-{
-  "leads": []
-}
-3) Start the API Server
-From the project root:
-
 json-server --watch db.json --port 3001
-Confirm it works by visiting:
-
-http://localhost:3001/leads
-Expected output: []
-
-4) Run the Frontend
-Use VS Code Live Server (or any static server).
-Typical Live Server URL:
-
-http://127.0.0.1:5500/
-
-Configuration
-Local API Base URL
-In js/api/leadsApi.js:
-
-export const LEADS_API_BASE = "http://localhost:3001";
-const RESOURCE = "leads";
-External Enrichment API
-In js/api/enrichApi.js, enrichment uses Datamuse (no key required):
-
-https://api.datamuse.com/words?ml=<query>&max=8
-
-API Endpoints Used (JSON Server)
-GET /leads — fetch list of leads
-
-POST /leads — create a new lead
-
-PATCH /leads/:id — update a lead’s status
-
-Pagination params:
-
-_page
-
-_limit
-
-Search param:
-
-q (full text search)
-
-What Changes When This Gets Attached to the Real Nexoria Website
-This class build uses a local JSON Server database. When attaching to a real Nexoria environment, the storage layer must be swapped to a hosted backend.
-
-1) Replace Local Storage API (JSON Server) with a Real Backend
-Current (class):
-
-LEADS_API_BASE = http://localhost:3001
-
-Production options:
-
-Supabase (recommended for Nexoria)
-
-Firebase / Firestore
-
-Custom Node/Express API
-
-A hosted REST DB (temporary) like MockAPI (not ideal for production)
-
-Required capabilities for the production backend:
-
-GET /leads (list)
-
-POST /leads (create)
-
-PATCH /leads/:id (update status)
-
-Optional: authentication and role-based access
-
-2) Add Authentication / Admin Gating (Required for Real Use)
-For Nexoria, this should not be public access.
-Add one of the following:
-
-Admin login + protected routes
-
-Server-side auth (JWT/session)
-
-Supabase Auth and Row Level Security (RLS)
-
-3) Update Environment Configuration
-Move API URLs and keys to environment variables:
-
-LEADS_API_BASE
-
-any external API keys (if enrichment becomes PageSpeed/Clearbit/etc.)
-
-In production, never hardcode secrets inside frontend JS.
-
-4) Replace “Demo Enrichment” With Business Enrichment (Optional Upgrade)
-For class, enrichment uses Datamuse keyword suggestions.
-
-For Nexoria, replace it with meaningful enrichment such as:
-
-PageSpeed Insights performance snapshot (SEO, performance)
-
-Tech stack detection (Wappalyzer/BuiltWith)
-
-Company metadata (Clearbit or similar)
-
-5) Add Operational Fields for Nexoria Workflow (Recommended)
-To align with Nexoria’s pipeline, add fields like:
-
-lead source (form, referral, DM, cold email)
-
-priority score
-
-assigned rep
-
-next follow-up date
-
-notes timeline (activity log)
-
-6) Hosting
-Frontend can be hosted on:
-
-Vercel / Netlify / GitHub Pages (static)
-Backend can be hosted on:
-
-Supabase / Firebase / Render / Railway / Fly.io
-
-Notes
-If you see 404 Not Found from the leads endpoint, confirm:
-
-JSON Server is running
-
-db.json exists in the folder you launched the server from
-
-the endpoint http://localhost:3001/leads returns []
