@@ -1,0 +1,15 @@
+{
+  "leads": [
+    {
+      "companyName": "Goblin Books",
+      "contactName": "Nick M",
+      "email": "Nick@gmail.com",
+      "website": "Goblin.com",
+      "industry": "Books",
+      "notes": "Sales Funnel",
+      "status": "new",
+      "createdAt": "2026-02-13T18:55:24.377Z",
+      "id": 1
+    }
+  ]
+}

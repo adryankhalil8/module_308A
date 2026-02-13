@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Client Intake Tracker</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body>
+  <header class="wrap">
+    <h1>Client Intake Tracker</h1>
+    <p class="muted">Create leads, enrich them, and manage status.</p>
+  </header>
+
+  <main class="wrap grid">
+    <!-- LEFT: Intake Form -->
+    <section class="card">
+      <h2>New Lead</h2>
+
+      <form id="leadForm" class="stack">
+        <label>
+          Company Name
+          <input id="companyName" name="companyName" placeholder="Acme Plumbing" required />
+        </label>
+
+        <label>
+          Contact Name
+          <input id="contactName" name="contactName" placeholder="Jordan Lee" required />
+        </label>
+
+        <label>
+          Email
+          <input id="email" name="email" type="email" placeholder="jordan@acme.com" required />
+        </label>
+
+        <label>
+          Website
+          <input id="website" name="website" placeholder="https://acme.com" />
+        </label>
+
+        <label>
+          Industry
+          <input id="industry" name="industry" placeholder="Home Services" />
+        </label>
+
+        <label>
+          Notes
+          <textarea id="notes" name="notes" rows="4" placeholder="What do they need?"></textarea>
+        </label>
+
+        <button class="btn" type="submit">Save Lead</button>
+
+        <div id="formMsg" class="muted"></div>
+      </form>
+
+      <hr />
+
+      <h3>Enrichment (External API)</h3>
+      <p class="muted">Keyword suggestions for company name (Datamuse API).</p>
+      <div id="enrichBox" class="pillbox"></div>
+    </section>
+
+    <!-- RIGHT: Lead List -->
+    <section class="card">
+      <div class="row">
+        <h2>Leads</h2>
+        <button id="refreshBtn" class="btn ghost">Refresh</button>
+      </div>
+
+      <div class="row">
+        <input id="searchInput" placeholder="Search company/contact/email..." />
+        <select id="statusFilter">
+          <option value="all">All</option>
+          <option value="new">New</option>
+          <option value="qualified">Qualified</option>
+          <option value="contacted">Contacted</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
+
+      <div id="listMsg" class="muted"></div>
+
+      <div id="leadList" class="list"></div>
+
+      <div class="row space">
+        <button id="prevBtn" class="btn ghost">Prev</button>
+        <div class="muted" id="pageInfo"></div>
+        <button id="nextBtn" class="btn ghost">Next</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap muted">
+    Tip: open DevTools → Network/Console to watch async requests + timing.
+  </footer>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
