@@ -1,5 +1,5 @@
 import { store } from "./state/store.js";
-import { fetchLeads, createLead, patchLead } from "./api/leadsApi.js";
+import { fetchLeads, createLead, patchLead, checkBackendHealth } from "./api/leadsApi.js";
 import { fetchKeywordSuggestions } from "./api/enrichApi.js";
 import { renderLeadList, renderPills } from "./ui/render.js";
 
@@ -38,11 +38,12 @@ function debounce(fn, ms = 300) {
 }
 
 /* --------------------------
-   Load list (GET) with safety
+   Load list (GET) with enhanced error handling
 --------------------------- */
 async function loadLeads() {
   const requestId = ++store.latestListRequestId;
   listMsg.textContent = "Loading leads...";
+  listMsg.className = "muted";
 
   try {
     const { items } = await fetchLeads({
@@ -65,18 +66,34 @@ async function loadLeads() {
 
     pageInfo.textContent = `Page ${store.page}`;
     listMsg.textContent = "";
+
+    // Update button states
+    prevBtn.disabled = store.page <= 1;
+    nextBtn.disabled = filtered.length < store.limit;
+
   } catch (err) {
     if (requestId !== store.latestListRequestId) return;
-    listMsg.textContent = `Error: ${err.message}`;
+    
+    listMsg.className = "muted error";
+    listMsg.innerHTML = `
+      ⚠️ ${err.message}
+      ${err.message.includes('backend') || err.message.includes('timeout') 
+        ? '<br><small>Make sure your backend server is running on port 3001</small>' 
+        : ''}
+    `;
+    
+    // Show empty state on error
+    leadList.innerHTML = '<div class="muted">Unable to load leads.</div>';
   }
 }
 
 /* --------------------------
-   POST: Create lead
+   POST: Create lead with validation
 --------------------------- */
 leadForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   formMsg.textContent = "Saving...";
+  formMsg.className = "muted";
 
   const payload = {
     companyName: companyName.value.trim(),
@@ -89,18 +106,31 @@ leadForm.addEventListener("submit", async (e) => {
     createdAt: new Date().toISOString(),
   };
 
+  // Client-side validation
+  if (!payload.companyName || !payload.contactName || !payload.email) {
+    formMsg.textContent = "Please fill in required fields";
+    formMsg.className = "muted error";
+    setTimeout(() => (formMsg.textContent = ""), 2000);
+    return;
+  }
+
   try {
     await createLead(payload);
-    formMsg.textContent = "Saved ✅";
+    formMsg.textContent = "✅ Lead saved successfully!";
+    formMsg.className = "muted success";
     leadForm.reset();
 
-    // reset list view and reload
+    // Clear enrichment suggestions
+    renderPills(enrichBox, []);
+
+    // Reset list view and reload
     store.page = 1;
     await loadLeads();
   } catch (err) {
-    formMsg.textContent = `Error: ${err.message}`;
+    formMsg.textContent = `❌ ${err.message}`;
+    formMsg.className = "muted error";
   } finally {
-    setTimeout(() => (formMsg.textContent = ""), 1500);
+    setTimeout(() => (formMsg.textContent = ""), 3000);
   }
 });
 
@@ -111,14 +141,26 @@ async function handleLeadAction(lead, action) {
   const [type, value] = action.split(":");
   if (type !== "status") return;
 
+  // Optimistic UI update
+  const originalStatus = lead.status;
+  lead.status = value;
+  renderLeadList(leadList, store.leads, handleLeadAction);
+
   listMsg.textContent = "Updating status...";
+  listMsg.className = "muted";
 
   try {
     await patchLead(lead.id, { status: value });
     await loadLeads();
     listMsg.textContent = "";
   } catch (err) {
-    listMsg.textContent = `Error: ${err.message}`;
+    // Revert on error
+    lead.status = originalStatus;
+    renderLeadList(leadList, store.leads, handleLeadAction);
+    
+    listMsg.textContent = `❌ ${err.message}`;
+    listMsg.className = "muted error";
+    setTimeout(() => (listMsg.textContent = ""), 3000);
   }
 }
 
@@ -154,15 +196,28 @@ nextBtn.addEventListener("click", async () => {
   await loadLeads();
 });
 
-refreshBtn.addEventListener("click", loadLeads);
+refreshBtn.addEventListener("click", async () => {
+  refreshBtn.disabled = true;
+  refreshBtn.textContent = "Refreshing...";
+  await loadLeads();
+  refreshBtn.disabled = false;
+  refreshBtn.textContent = "Refresh";
+});
 
 /* --------------------------
    External GET enrichment (Datamuse)
    - abort previous
    - ignore stale
+   - graceful degradation
 --------------------------- */
 const debouncedEnrich = debounce(async () => {
   const q = companyName.value.trim();
+
+  // Clear if empty
+  if (!q || q.length < 2) {
+    renderPills(enrichBox, []);
+    return;
+  }
 
   // Abort previous request
   if (store.enrichAbort) store.enrichAbort.abort();
@@ -179,15 +234,36 @@ const debouncedEnrich = debounce(async () => {
 
     renderPills(enrichBox, words);
   } catch (err) {
+    // Silent failure for enrichment (non-critical feature)
     if (err.name === "AbortError") return;
-    renderPills(enrichBox, []);
+    if (requestId === store.latestEnrichRequestId) {
+      renderPills(enrichBox, []);
+    }
   }
 }, 350);
 
 companyName.addEventListener("input", debouncedEnrich);
 
 /* --------------------------
-   Start
+   Startup: Check backend health
 --------------------------- */
-renderPills(enrichBox, []);
-loadLeads();
+async function initialize() {
+  renderPills(enrichBox, []);
+  
+  // Check if backend is accessible
+  const isHealthy = await checkBackendHealth();
+  
+  if (!isHealthy) {
+    listMsg.innerHTML = `
+      ⚠️ Cannot connect to backend server
+      <br><small>Make sure your backend is running on http://localhost:3001</small>
+    `;
+    listMsg.className = "muted error";
+    leadList.innerHTML = '<div class="muted">Backend unavailable</div>';
+    return;
+  }
+  
+  await loadLeads();
+}
+
+initialize();

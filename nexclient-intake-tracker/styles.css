@@ -101,3 +101,18 @@ input:focus, textarea:focus, select:focus{ border-color: rgba(59,130,246,.7); }
   font-size:.9rem;
 }
 hr{ border:none; border-top:1px solid var(--line); margin:16px 0; }
+
+.muted.error {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.muted.success {
+  color: #28a745;
+  font-weight: 500;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

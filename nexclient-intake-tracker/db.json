@@ -10,6 +10,17 @@
       "status": "new",
       "createdAt": "2026-02-13T18:55:24.377Z",
       "id": 1
+    },
+    {
+      "companyName": "Khalil",
+      "contactName": "Concrete",
+      "email": "Khalil@gmail.com",
+      "website": "con.com",
+      "industry": "Remodeling",
+      "notes": "sales funnel",
+      "status": "new",
+      "createdAt": "2026-02-16T16:30:51.108Z",
+      "id": 2
     }
   ]
 }
